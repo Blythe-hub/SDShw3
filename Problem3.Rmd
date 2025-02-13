@@ -1,0 +1,89 @@
+---
+title: "NBC Pilot Survey Analysis"
+author: "Varun Venkatesh"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE,echo=FALSE}
+library(tidyverse)
+library(broom)
+library(knitr)
+library(boot)
+
+df <- read.csv("nbc_pilotsurvey.csv")
+```
+
+## Part A: Happiness Comparison Between "Living with Ed" and "My Name is Earl"
+
+### Question
+Who makes people happier: Ed or Earl?
+
+### Approach
+A 95% confidence interval for the difference in mean Q1_Happy scores between "Living with Ed" and "My Name is Earl" was calculated.
+
+### Results
+```{r,echo=FALSE}
+# Filter data
+df_happy <- df %>% filter(Show %in% c("Living with Ed", "My Name is Earl"))
+
+# T-test for mean difference
+happy_ttest <- t.test(Q1_Happy ~ Show, data = df_happy)
+kable(tidy(happy_ttest))
+```
+
+### Conclusion
+The confidence interval for the mean difference shows whether one show tends to make viewers happier than the other. If the interval doesn’t include zero, it suggests a meaningful difference in happiness ratings.
+
+## Part B: Annoyance Comparison Between "The Biggest Loser" and "The Apprentice: Los Angeles"
+
+### Question
+Which reality/contest show made people feel more annoyed?
+
+### Approach
+A 95% confidence interval for the difference in mean Q1_Annoyed scores between "The Biggest Loser" and "The Apprentice: Los Angeles" was computed.
+
+### Results
+```{r,echo=FALSE}
+# Filter data
+df_annoyed <- df %>% filter(Show %in% c("The Biggest Loser", "The Apprentice: Los Angeles"))
+
+# T-test for mean difference
+annoyed_ttest <- t.test(Q1_Annoyed ~ Show, data = df_annoyed)
+kable(tidy(annoyed_ttest))
+```
+
+### Conclusion
+The confidence interval helps determine whether one show is consistently more annoying than the other. If zero is not within the interval, it indicates a significant difference in annoyance levels.
+
+## Part C: Confusion Proportion for "Dancing with the Stars"
+
+### Question
+What proportion of viewers found "Dancing with the Stars" confusing?
+
+### Approach
+A 95% confidence interval for the proportion of viewers who rated "Q2_Confusing" as 4 or 5 was computed.
+
+### Results
+```{r,echo=FALSE}
+# Filter data
+df_confused <- df %>% filter(Show == "Dancing with the Stars") %>% mutate(isConfused = Q2_Confusing >= 4)
+
+# Compute proportion
+confusion_prop <- mean(df_confused$isConfused, na.rm = TRUE)
+
+# Bootstrap function
+prop_boot <- function(data, indices) {
+  sample_data <- data[indices, ]
+  return(mean(sample_data$isConfused, na.rm = TRUE))
+}
+
+# Perform bootstrap
+set.seed(123)
+boot_results_conf <- boot(df_confused, prop_boot, R = 1000)
+ci_95_conf <- boot.ci(boot_results_conf, type = "perc")
+kable(data.frame(Lower = ci_95_conf$percent[4], Upper = ci_95_conf$percent[5]))
+```
+
+### Conclusion
+The confidence interval gives an estimate of how many American viewers found Dancing with the Stars confusing. This analysis sheds light on how audiences perceive a show that seems straightforward.

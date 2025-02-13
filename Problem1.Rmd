@@ -1,0 +1,125 @@
+---
+title: "Gas Price Analysis"
+author: "Varun Venkatesh"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE,echo=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(broom)
+library(knitr)
+
+df <- read.csv("gasprices.csv")
+```
+
+## Theory A: Gas stations charge more if they lack direct competition in sight.
+
+### Claim
+
+Gas stations without nearby competitors charge higher prices for regular unleaded gasoline.
+
+### Evidence
+
+```{r,echo=FALSE}
+comp_price <- df %>% group_by(Competitors) %>% summarise(mean_price = mean(Price), sd_price = sd(Price), n = n())
+ci_comp <- comp_price %>% mutate(se = sd_price/sqrt(n), lower = mean_price - qt(0.975, n-1) * se, upper = mean_price + qt(0.975, n-1) * se)
+kable(ci_comp)
+```
+
+```{r, echo=FALSE}
+ggplot(df, aes(x = Competitors, y = Price)) + geom_boxplot() + ggtitle("Gas Prices vs Competition")
+```
+
+### Conclusion
+
+The analysis shows that gas stations without nearby competitors usually charge higher prices. The confidence interval confirms that this difference is statistically significant, reinforcing the idea that competition helps keep gas prices lower.
+
+## Theory B: The richer the area, the higher the gas prices.
+
+### Claim
+
+Higher median income areas have higher gas prices.
+
+### Evidence
+
+```{r,echo=FALSE}
+income_model <- lm(Price ~ Income, data=df)
+kable(tidy(income_model))
+```
+
+```{r, echo=FALSE}
+ggplot(df, aes(x = Income, y = Price)) + geom_point() + geom_smooth(method="lm") + ggtitle("Gas Prices vs Median Income")
+```
+
+### Conclusion
+
+The regression analysis doesn’t show a strong link between income and gas prices. Since the confidence interval for the income coefficient includes zero, it suggests that median income doesn’t have a significant impact on gas prices in this dataset.
+
+## Theory C: Gas stations at stoplights charge more.
+
+### Claim
+
+Gas stations at stoplights have higher gas prices.
+
+### Evidence
+
+```{r,echo=FALSE}
+stoplight_price <- df %>% group_by(Stoplight) %>% summarise(mean_price = mean(Price), sd_price = sd(Price), n = n())
+ci_stoplight <- stoplight_price %>% mutate(se = sd_price/sqrt(n), lower = mean_price - qt(0.975, n-1) * se, upper = mean_price + qt(0.975, n-1) * se)
+kable(ci_stoplight)
+```
+
+```{r, echo=FALSE}
+ggplot(df, aes(x = Stoplight, y = Price)) + geom_boxplot() + ggtitle("Gas Prices vs Stoplights")
+```
+
+### Conclusion
+
+The data suggests that gas stations at stoplights do not consistently charge more than those that are not. The confidence intervals overlap, and there is no strong statistical support for this claim.
+
+## Theory D: Gas stations with direct highway access charge more.
+
+### Claim
+
+Gas stations on highways charge higher prices.
+
+### Evidence
+
+```{r,echo=FALSE}
+highway_price <- df %>% group_by(Highway) %>% summarise(mean_price = mean(Price), sd_price = sd(Price), n = n())
+ci_highway <- highway_price %>% mutate(se = sd_price/sqrt(n), lower = mean_price - qt(0.975, n-1) * se, upper = mean_price + qt(0.975, n-1) * se)
+kable(ci_highway)
+```
+
+```{r, echo=FALSE}
+ggplot(df, aes(x = Highway, y = Price)) + geom_boxplot() + ggtitle("Gas Prices vs Highway Access")
+```
+
+### Conclusion
+
+The analysis suggests that gas stations with highway access charge slightly more on average, but the difference is small. The confidence interval indicates a possible but minor effect, meaning highway access is not a major factor in pricing.
+
+## Theory E: Shell charges more than all other non-Shell brands.
+
+### Claim
+
+Shell gas stations charge higher prices than competitors.
+
+### Evidence
+
+```{r,echo=FALSE}
+brand_price <- df %>% group_by(Brand) %>% summarise(mean_price = mean(Price), sd_price = sd(Price), n = n())
+ci_brand <- brand_price %>% mutate(se = sd_price/sqrt(n), lower = mean_price - qt(0.975, n-1) * se, upper = mean_price + qt(0.975, n-1) * se)
+kable(ci_brand)
+```
+
+```{r, echo=FALSE}
+ggplot(df, aes(x = Brand, y = Price)) + geom_boxplot() + ggtitle("Gas Prices by Brand")
+```
+
+### Conclusion
+
+Shell gas stations tend to charge higher prices than other brands, and the confidence interval confirms that this difference is statistically significant. This backs up the idea that Shell consistently prices its fuel above competitors.
